@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JARVIS</title>
+<style>
+:root{--bg:#03060f;--panel:#07111f;--line:#17456b;--cyan:#38d9ff;--glow:#7fe9ff;--amber:#ffb454;--text:#cfeaff;--dim:#6f93b3}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:"Segoe UI",Roboto,system-ui,sans-serif;overflow:hidden}
+#boot{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);transition:opacity .8s}
+#boot.off{opacity:0;pointer-events:none}
+.reactor{width:min(44vmin,260px);aspect-ratio:1;position:relative}
+.reactor svg{width:100%;height:100%;filter:drop-shadow(0 0 14px var(--cyan))}
+.spin{transform-origin:100px 100px;animation:spin 14s linear infinite}
+.spin2{transform-origin:100px 100px;animation:spin 7s linear infinite reverse}
+@keyframes spin{to{transform:rotate(360deg)}}
+.core{animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.55}}
+.speaking .core{animation-duration:.5s}
+#bootTxt{margin-top:22px;letter-spacing:.5em;font-size:22px;color:var(--glow);font-weight:300}
+#bootSub{margin-top:8px;color:var(--dim);font-size:13px;min-height:18px}
+#start{margin-top:26px;padding:12px 34px;background:transparent;border:1px solid var(--cyan);color:var(--cyan);font-size:16px;border-radius:2px}
+#app{height:100%;display:grid;grid-template-columns:1fr 1.25fr 1fr;grid-template-rows:auto 1fr;gap:10px;padding:10px;padding-top:max(10px,env(safe-area-inset-top))}
+header{grid-column:1/4;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:6px}
+header h1{font-size:20px;font-weight:300;letter-spacing:.4em;color:var(--glow)}
+#clock{font-size:26px;font-variant-numeric:tabular-nums;text-align:right;line-height:1}
+#date{font-size:12px;color:var(--dim)}
+.col{display:flex;flex-direction:column;gap:10px;min-height:0}
+.card{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--cyan);padding:10px 12px;min-height:0;overflow:auto;position:relative}
+.card h2{font-size:14px;font-weight:600;color:var(--cyan);margin-bottom:6px}
+.card.grow{flex:1}
+.row{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid #0e2740;font-size:14px}
+.row small{color:var(--dim);display:block}
+.row .t{color:var(--amber);white-space:nowrap;font-variant-numeric:tabular-nums}
+.unread{color:#fff;font-weight:600}
+#wx{font-size:34px;font-weight:200}
+#wxd{color:var(--dim);font-size:13px}
+#core{align-items:center}
+#core .reactor{width:min(34vmin,230px);margin:4px auto}
+#log{flex:1;width:100%;overflow:auto;font-size:15px;line-height:1.45;padding:4px 2px}
+.m{margin:6px 0;padding:6px 10px;border-radius:2px;max-width:92%}
+.m.u{margin-left:auto;background:#0b2a45;border-right:2px solid var(--amber)}
+.m.j{background:#06182a;border-left:2px solid var(--cyan)}
+#bar{display:flex;gap:6px;width:100%}
+#in{flex:1;background:#020912;border:1px solid var(--line);color:var(--text);padding:10px;font-size:16px;border-radius:2px;min-width:0}
+button{font:inherit;cursor:pointer}
+.b{background:#0a2a44;border:1px solid var(--cyan);color:var(--cyan);padding:0 14px;border-radius:2px;min-height:42px}
+.b.on{background:var(--cyan);color:#001018}
+.chips{display:flex;gap:6px;flex-wrap:wrap;width:100%;margin-bottom:6px}
+.chips .b{min-height:34px;font-size:13px}
+textarea#nt{width:100%;height:100%;min-height:90px;background:transparent;border:0;color:var(--text);font-size:15px;resize:none;outline:0}
+#modal{position:fixed;inset:0;background:#000b;z-index:30;display:none;align-items:center;justify-content:center}
+#modal.on{display:flex}
+#modal div.box{background:var(--panel);border:1px solid var(--cyan);padding:18px;width:min(92vw,420px);display:flex;flex-direction:column;gap:8px}
+#modal label{font-size:12px;color:var(--dim)}
+#modal input,#modal select{background:#020912;border:1px solid var(--line);color:var(--text);padding:9px;font-size:15px}
+@media (max-width:820px){html,body{overflow:auto}#app{display:flex;flex-direction:column;height:auto}.card.grow{min-height:200px}#log{min-height:220px}}
+@media (prefers-reduced-motion:reduce){.spin,.spin2,.core{animation:none}}
+</style>
+</head>
+<body>
+<div id="boot">
+  <div class="reactor" id="bootR"></div>
+  <div id="bootTxt">J.A.R.V.I.S</div>
+  <div id="bootSub">Systems standing by</div>
+  <button id="start">Initialize</button>
+</div>
+
+<div id="app">
+  <header>
+    <h1>JARVIS</h1>
+    <div><div id="clock">--:--:--</div><div id="date"></div></div>
+  </header>
+
+  <div class="col">
+    <div class="card"><h2>Weather</h2><div id="wx">--</div><div id="wxd">Loading…</div></div>
+    <div class="card grow"><h2>Calendar (demo)</h2><div id="cal"></div></div>
+    <div class="card grow"><h2>Inbox (demo)</h2><div id="mail"></div></div>
+  </div>
+
+  <div class="col card" id="core" style="border-left-color:var(--line)">
+    <div class="reactor" id="mainR"></div>
+    <div class="chips">
+      <button class="b" id="brief">Morning brief</button>
+      <button class="b" id="lang">English</button>
+      <button class="b" id="mute">Voice on</button>
+      <button class="b" id="wake">Wake: off</button>
+      <button class="b" id="gear">Settings</button>
+    </div>
+    <div id="log"></div>
+    <div id="bar">
+      <input id="in" placeholder="Ask JARVIS…" autocomplete="off">
+      <button class="b" id="mic" aria-label="Speak">Mic</button>
+      <button class="b" id="send">Send</button>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="card grow"><h2>Notes</h2><textarea id="nt" placeholder="Type a note. It saves on this tablet."></textarea></div>
+    <div class="card"><h2>Calculator</h2>
+      <input id="calc" class="" style="width:100%;background:#020912;border:1px solid var(--line);color:var(--text);padding:9px;font-size:16px" placeholder="e.g. 12*7+3">
+      <div id="calcOut" style="margin-top:6px;font-size:20px;color:var(--amber)"></div>
+    </div>
+    <div class="card"><h2>Commands</h2>
+      <div style="font-size:13px;color:var(--dim);line-height:1.6">time, date, weather, brief, note: text, calculate 5*9, open youtube, play music, or ask anything.</div>
+    </div>
+  </div>
+</div>
+
+<div id="modal"><div class="box">
+  <label>Gemini API key (stays on this tablet)</label><input id="key" type="password" placeholder="AIza…">
+  <label>Gemini model</label><input id="model" value="gemini-2.0-flash">
+  <label>ElevenLabs API key (optional, for a better voice)</label><input id="elkey" type="password" placeholder="sk_…">
+  <label>ElevenLabs voice ID</label><input id="elvoice" value="JBFqnCBsd6RMkjVDRZzb">
+  <label>Your name</label><input id="uname" placeholder="Boss">
+  <label>Weather city latitude, longitude</label><input id="geo" value="28.61,77.21">
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px"><button class="b" id="sv">Save</button></div>
+</div></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const S={key:store.get('j_key',''),model:store.get('j_model','gemini-2.0-flash'),name:store.get('j_name','Boss'),geo:store.get('j_geo','28.61,77.21'),elKey:store.get('j_elkey',''),elVoice:store.get('j_elvoice','JBFqnCBsd6RMkjVDRZzb'),hi:store.get('j_hi','0')==='1',voice:true,wx:null};
+
+/* reactor svg */
+const reactor=`<svg viewBox="0 0 200 200"><g fill="none" stroke="#38d9ff">
+<circle cx="100" cy="100" r="94" stroke-width="1.5" opacity=".6"/>
+<g class="spin"><circle cx="100" cy="100" r="82" stroke-width="5" stroke-dasharray="12 8"/></g>
+<g class="spin2"><circle cx="100" cy="100" r="66" stroke-width="3" stroke-dasharray="40 14" stroke="#7fe9ff"/></g>
+<circle cx="100" cy="100" r="50" stroke-width="2"/>
+<g stroke-width="6" stroke="#38d9ff" opacity=".85"><path d="M100 54v20M100 126v20M54 100h20M126 100h20M67 67l14 14M119 119l14 14M133 67l-14 14M81 119l-14 14"/></g>
+<circle class="core" cx="100" cy="100" r="22" fill="#bff6ff" stroke="#fff" stroke-width="2"/></g></svg>`;
+$('#bootR').innerHTML=reactor;$('#mainR').innerHTML=reactor;
+
+/* clock */
+function tick(){const d=new Date();$('#clock').textContent=d.toLocaleTimeString('en-GB');$('#date').textContent=d.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+setInterval(tick,1000);tick();
+
+/* demo data */
+const evs=[['09:30','Stand-up call','Team'],['13:00','Lunch','Break'],['16:30','Project review','Online'],['20:00','Study session','Home']];
+$('#cal').innerHTML=evs.map(e=>`<div class="row"><div>${e[1]}<small>${e[2]}</small></div><div class="t">${e[0]}</div></div>`).join('');
+const mails=[['Aman','Notes for tomorrow',1],['GitHub','New star on your repo',1],['Google','Security alert',0],['Riya','Photos from the trip',0]];
+$('#mail').innerHTML=mails.map(m=>`<div class="row"><div class="${m[2]?'unread':''}">${m[0]}<small>${m[1]}</small></div></div>`).join('');
+
+/* weather */
+const WC={0:'Clear',1:'Mostly clear',2:'Partly cloudy',3:'Overcast',45:'Fog',48:'Fog',51:'Light drizzle',61:'Rain',63:'Rain',65:'Heavy rain',80:'Showers',95:'Thunderstorm'};
+async function weather(){try{const [la,lo]=S.geo.split(',').map(s=>s.trim());const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&current=temperature_2m,weather_code,relative_humidity_2m`);const j=await r.json();const c=j.current;S.wx=`${Math.round(c.temperature_2m)} degrees, ${WC[c.weather_code]||'mixed conditions'}`;$('#wx').textContent=Math.round(c.temperature_2m)+'°C';$('#wxd').textContent=(WC[c.weather_code]||'Mixed')+' · humidity '+c.relative_humidity_2m+'%'}catch(e){$('#wx').textContent='--';$('#wxd').textContent='Offline. Weather unavailable.'}}
+weather();
+
+/* notes + calc */
+$('#nt').value=store.get('j_notes','');$('#nt').oninput=e=>store.set('j_notes',e.target.value);
+$('#calc').oninput=e=>{const v=e.target.value;if(/^[\d+\-*/().%\s^]+$/.test(v)){try{const r=Function('"use strict";return ('+v.replace(/\^/g,'**')+')')();$('#calcOut').textContent=isFinite(r)?'= '+r:''}catch(x){$('#calcOut').textContent=''}}else $('#calcOut').textContent=''};
+
+/* chat ui */
+function add(t,c){const d=document.createElement('div');d.className='m '+c;d.textContent=t;$('#log').appendChild(d);$('#log').scrollTop=1e9}
+
+/* speech */
+let voices=[];function loadV(){voices=speechSynthesis.getVoices()}if('speechSynthesis' in window){loadV();speechSynthesis.onvoiceschanged=loadV}
+let curAudio=null;
+function stopAll(){if('speechSynthesis' in window)speechSynthesis.cancel();if(curAudio){curAudio.pause();curAudio=null}$('#mainR').classList.remove('speaking')}
+async function elSpeak(t){const r=await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+encodeURIComponent(S.elVoice)+'?output_format=mp3_44100_128',{method:'POST',headers:{'xi-api-key':S.elKey,'Content-Type':'application/json'},body:JSON.stringify({text:t,model_id:'eleven_multilingual_v2'})});
+if(!r.ok){let m='ElevenLabs error '+r.status;try{const j=await r.json();m=(j.detail&&(j.detail.message||j.detail))||m}catch(e){}throw new Error(typeof m==='string'?m:JSON.stringify(m))}
+const url=URL.createObjectURL(await r.blob());const a=new Audio(url);curAudio=a;
+a.onplay=()=>$('#mainR').classList.add('speaking');a.onended=a.onerror=()=>{$('#mainR').classList.remove('speaking');URL.revokeObjectURL(url);resumeWake()};await a.play()}
+function say(t){add(t,'j');if(!S.voice)return;stopAll();pauseWake();
+if(S.elKey){elSpeak(t).catch(e=>{add('ElevenLabs failed ('+e.message+'). Using the tablet voice.','j');browserSay(t)});return}
+browserSay(t)}
+function browserSay(t){if(!('speechSynthesis' in window)){resumeWake();return}const u=new SpeechSynthesisUtterance(t);const lang=S.hi?'hi-IN':'en-GB';u.lang=lang;const v=voices.find(v=>v.lang===lang)||voices.find(v=>v.lang.startsWith(lang.slice(0,2)));if(v)u.voice=v;u.rate=1;u.pitch=.85;
+u.onstart=()=>$('#mainR').classList.add('speaking');u.onend=u.onerror=()=>{$('#mainR').classList.remove('speaking');resumeWake()};speechSynthesis.speak(u)}
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null,listening=false;
+$('#mic').onclick=()=>{if(!SR){say('Speech recognition is not supported in this browser. Try Chrome.');return}
+if(listening){rec&&rec.stop();return}
+pauseWake();rec=new SR();rec.lang=S.hi?'hi-IN':'en-IN';rec.interimResults=false;
+rec.onstart=()=>{listening=true;$('#mic').classList.add('on')};
+rec.onend=()=>{listening=false;$('#mic').classList.remove('on');resumeWake()};
+rec.onresult=e=>handle(e.results[0][0].transcript);
+rec.onerror=e=>say('I could not hear you. '+(e.error==='not-allowed'?'Please allow the microphone.':'Try again.'));
+try{rec.start()}catch(e){}};
+
+/* brain */
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function greet(){const h=new Date().getHours();return h<12?'Good morning':h<17?'Good afternoon':'Good evening'}
+function briefText(){const next=evs.map(e=>e[1]+' at '+e[0]).slice(0,3).join(', ');const unread=mails.filter(m=>m[2]).length;
+return S.hi?`${greet()} ${S.name}. Abhi ${new Date().toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'})} ho rahe hain. ${S.wx?'Mausam: '+S.wx+'. ':''}Aaj ke kaam: ${next}. Aapke ${unread} unread messages hain.`
+:`${greet()}, ${S.name}. It is ${new Date().toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'})}. ${S.wx?'Weather is '+S.wx+'. ':''}Today you have ${next}. You have ${unread} unread messages.`}
+function local(q){const t=q.toLowerCase();
+if(/brief/.test(t))return briefText();
+if(/\b(time|samay|kitne baje)\b/.test(t))return 'It is '+new Date().toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'})+'.';
+if(/\b(date|tarikh|today)\b/.test(t))return 'Today is '+new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})+'.';
+if(/weather|mausam/.test(t))return S.wx?'Current weather: '+S.wx+'.':'Weather is not available right now.';
+let m=t.match(/^note[:\s]+(.+)/);if(m){const n=$('#nt');n.value+=(n.value?'\n':'')+q.replace(/^note[:\s]+/i,'');store.set('j_notes',n.value);return 'Note saved.'}
+m=t.match(/(?:calculate|calc|hisab)\s+(.+)/);if(m&&/^[\d+\-*/().%\s^x]+$/.test(m[1])){try{return 'The answer is '+Function('"use strict";return ('+m[1].replace(/x/g,'*').replace(/\^/g,'**')+')')()+'.'}catch(e){}}
+if(/open youtube/.test(t)){window.open('https://youtube.com','_blank');return 'Opening YouTube.'}
+if(/play music|spotify/.test(t)){window.open('https://open.spotify.com','_blank');return 'Opening Spotify.'}
+if(/hello|hi\b|hey|namaste|jarvis/.test(t))return pick([`At your service, ${S.name}.`,`Online and ready, ${S.name}.`]);
+if(/thank|shukriya|dhanyavad/.test(t))return 'Always a pleasure.';
+return null}
+async function gemini(q){if(!S.key)return null;
+const sys=`You are JARVIS, a calm, witty, concise AI butler. Address the user as ${S.name}. Reply in ${S.hi?'Hinglish (Hindi in Roman script)':'English'}, max 3 short sentences, plain text only.`;
+const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${S.model}:generateContent?key=${encodeURIComponent(S.key)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({systemInstruction:{parts:[{text:sys}]},contents:[{role:'user',parts:[{text:q}]}]})});
+const j=await r.json();if(!r.ok)throw new Error(j.error&&j.error.message||'API error');
+return j.candidates[0].content.parts.map(p=>p.text||'').join('').trim()}
+async function handle(q){q=q.trim();if(!q)return;add(q,'u');$('#in').value='';
+const l=local(q);if(l){say(l);return}
+try{const g=await gemini(q);if(g){say(g);return}}catch(e){say('The online brain failed: '+e.message);return}
+say(S.hi?'Ye sawal samajhne ke liye Settings mein Gemini key daaliye.':'I can answer that once you add a Gemini key in Settings. Meanwhile I handle time, weather, notes and maths.')}
+$('#send').onclick=()=>handle($('#in').value);$('#in').onkeydown=e=>{if(e.key==='Enter')handle($('#in').value)};
+$('#brief').onclick=()=>say(briefText());
+$('#lang').onclick=()=>{S.hi=!S.hi;store.set('j_hi',S.hi?'1':'0');$('#lang').textContent=S.hi?'Hinglish':'English'};
+$('#lang').textContent=S.hi?'Hinglish':'English';
+$('#mute').onclick=()=>{S.voice=!S.voice;$('#mute').textContent=S.voice?'Voice on':'Voice off';if(!S.voice)stopAll()};
+
+/* wake word: "Hey JARVIS" (page must stay open, screen on) */
+let wakeOn=false,wrec=null,wPaused=false,awaiting=false,lock=null;
+const WRE=/(?:hey|hi|ok|okay)?\s*(?:jarvis|jarvas|jarwis|jarbis|garvis)\b[,.!?\s]*(.*)$/i;
+function btnWake(){$('#wake').textContent=wakeOn?'Wake: on':'Wake: off';$('#wake').classList.toggle('on',wakeOn)}
+function startWake(){if(!SR||!wakeOn||wPaused||listening||wrec)return;
+const r=new SR();wrec=r;r.lang=S.hi?'hi-IN':'en-IN';r.continuous=true;r.interimResults=false;
+r.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)heard(e.results[i][0].transcript.trim())}};
+r.onend=()=>{if(wrec===r)wrec=null;if(wakeOn&&!wPaused&&!listening)setTimeout(startWake,400)};
+r.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){wakeOn=false;store.set('j_wake','0');btnWake();add('Wake word needs microphone permission.','j')}};
+try{r.start()}catch(x){wrec=null}}
+function stopWake(){if(wrec){const r=wrec;wrec=null;r.onend=null;try{r.abort()}catch(e){}}}
+function pauseWake(){wPaused=true;stopWake()}
+function resumeWake(){wPaused=false;if(wakeOn)setTimeout(startWake,500)}
+function heard(t){if(awaiting){awaiting=false;handle(t);return}
+const m=t.match(WRE);if(!m)return;const cmd=m[1].trim();
+if(cmd)handle(cmd);else{awaiting=true;setTimeout(()=>awaiting=false,15000);say(S.hi?'Ji, boliye.':'Yes?')}}
+async function keepAwake(){try{if(wakeOn&&'wakeLock' in navigator)lock=await navigator.wakeLock.request('screen');else if(lock){lock.release();lock=null}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&wakeOn)keepAwake()});
+$('#wake').onclick=()=>{if(!SR){say('Wake word needs Chrome with speech recognition.');return}
+wakeOn=!wakeOn;store.set('j_wake',wakeOn?'1':'0');btnWake();keepAwake();
+if(wakeOn){startWake();add('Listening for "Hey JARVIS".','j')}else stopWake()};
+
+/* settings */
+$('#gear').onclick=()=>{$('#key').value=S.key;$('#model').value=S.model;$('#uname').value=S.name;$('#geo').value=S.geo;$('#elkey').value=S.elKey;$('#elvoice').value=S.elVoice;$('#modal').classList.add('on')};
+$('#sv').onclick=()=>{S.key=$('#key').value.trim();S.model=$('#model').value.trim()||'gemini-2.0-flash';S.name=$('#uname').value.trim()||'Boss';S.elKey=$('#elkey').value.trim();S.elVoice=$('#elvoice').value.trim()||'JBFqnCBsd6RMkjVDRZzb';store.set('j_elkey',S.elKey);store.set('j_elvoice',S.elVoice);S.geo=$('#geo').value.trim()||'28.61,77.21';
+store.set('j_key',S.key);store.set('j_model',S.model);store.set('j_name',S.name);store.set('j_geo',S.geo);$('#modal').classList.remove('on');weather()};
+
+/* boot */
+const steps=['Loading core systems','Calibrating arc reactor','Linking voice module','All systems online'];let si=0;
+const bt=setInterval(()=>{$('#bootSub').textContent=steps[Math.min(si++,steps.length-1)]},700);
+$('#start').onclick=()=>{clearInterval(bt);$('#boot').classList.add('off');
+wakeOn=store.get('j_wake','0')==='1'&&!!SR;btnWake();if(wakeOn){keepAwake();startWake()}
+setTimeout(()=>say(briefText()),600)};
+</script>
+</body>
+</html>
